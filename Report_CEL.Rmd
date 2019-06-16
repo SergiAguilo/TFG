@@ -29,9 +29,10 @@ celfiles <- affy::ReadAffy(celfile.path = params$Folder)
 # Pseudo-images
 
 ```{r, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE,  comment=FALSE, message= FALSE, eval =T, out.width='.7\\linewidth', fig.asp=1, fig.ncol = 1}
-# ### Change the class of the files with a robut linear model
-# ### Necessary for creating the Pseudo-images
- cel_PLM <- affyPLM::fitPLM(celfiles)
+
+### Change the class of the files with a robut linear model
+### Necessary for creating the Pseudo-images
+cel_PLM <- affyPLM::fitPLM(celfiles)
 
 
 # Make the image for each file
@@ -41,12 +42,14 @@ for (i in celfiles$sample){
   # Residuals
   image(cel_PLM, which=i, type="resids", add.legend = T)
 }
+
 ```
 
 # Processed data
 
 ```{r, echo=FALSE, results='hide'}
 
+### Apply RMA and extract the expression values
 norm_cel <- rma(celfiles)
 norm_exp <- exprs(norm_cel)
 
@@ -58,12 +61,16 @@ for (i in celfiles$sample){
 }
 # Create a data frame
 norm_logData = data.frame(logInt=norm_logs,sampleName=norm_sampleNames)
+
 ```
 
 ### Boxplot
 
 ```{r, echo=FALSE, results='hide'}
-par(mar=c(20,8,4.1,2.1))# Boxplot
+
+### Change size of the plot
+par(mar=c(20,8,4.1,2.1))
+
 ggplot(norm_logData, aes(sampleName, logInt)) + geom_boxplot() +
   xlab("Sample number") + ylab("Normalised expression values") +
   scale_y_log10() + 
@@ -76,7 +83,6 @@ ggplot(norm_logData, aes(sampleName, logInt)) + geom_boxplot() +
 
 ```{r, echo=FALSE, results='hide'}
 
-# Density plot
 ggplot(norm_logData, aes(logInt, color= sampleName)) +
   geom_line(stat="density") + scale_x_log10() +
   scale_color_discrete("Sample Name") + xlab("Normalised expression values")
@@ -91,26 +97,32 @@ ggplot(norm_logData, aes(logInt, color= sampleName)) +
 for (i in celfiles$sample){
   affy::MAplot(norm_cel, which = i)
 }
+
 ```
 
 ### Relative Log Expression (RLE)
 
 ```{r, echo=FALSE, fig.width=10, fig.height=9}
+
+### RLE can also be done by the following command
 # RLE(cel_PLM, names = celfiles$sample)
+
 par(mar = c(16, 10, 4.1, 2.1))
 Mbox(norm_cel, main = "RLE", ylim = c(-0.4, 0.4),
      outline = FALSE, col = "mistyrose",
      las = 3, whisklty = 0, staplelty = 0, ylab = "RLE value")
 abline(h=0)
+
 ```
 
 ### Normalised Unscaled Standard Error
 
 ```{r, echo=FALSE,fig.width=10, fig.height=9}
-par(mar = c(16, 10, 4.1, 2.1))
 
+par(mar = c(16, 10, 4.1, 2.1))
 boxplot(cel_PLM, main = "NUSE", outline = F,
         ylim = c(0.95,1.15),col = "lightblue", las = 3,
         whisklty = 0, staplelty = 0, ylab = "NUSE value")
 abline(h=1)
+
 ```
