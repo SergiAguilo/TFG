@@ -6,7 +6,7 @@
 
 ### Windows
  
-1. Open the files in Rstudio.
+1. Open the ".Rmd" files in Rstudio.
 1. Open the Knit option.
 1. Select "Knit with parameters...".
 1. In the pop-up, write the folder where the files are located.
