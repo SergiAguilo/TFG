@@ -21,7 +21,7 @@
 
 ``` shell
 
-Rscript input_CEL.R folder/of/the/files
+Rscript input_CEL.R Report_CEL.Rmd folder/of/the/files
 
 ```
 
@@ -30,6 +30,6 @@ or
 
 ``` shell
 
-Rscript input_IDAT.R folder/of/the/files
+Rscript input_IDAT.R Report_IDAT.Rmd  folder/of/the/files
 
 ```
