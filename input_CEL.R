@@ -1,3 +1,3 @@
 app <- commandArgs(trailingOnly = T)
 
-rmarkdown::render(input = "Report_CEL.Rmd", params = list(Folder = app))
+rmarkdown::render(input = app[1], params = list(Folder = app[2]))
