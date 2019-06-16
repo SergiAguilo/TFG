@@ -7,7 +7,7 @@ output:
     toc: true
     toc_float: true
 params: 
-  Folder: myargs
+  Folder: ""
 ---
 
 ```{r setup, include=FALSE}
