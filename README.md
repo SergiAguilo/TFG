@@ -1,2 +1,35 @@
 # Pipelines for DNA microarray QC
-#### Two pipelines are created to make the quality control of raw Affymetrix and Illumina microarray files.
+
+#### Pipeline_CEL.Rmd and Pipeline_IDAT.Rmd are created to make the quality control of raw Affymetrix and Illumina microarray files.
+
+## Running the pipelines
+
+### Windows
+ 
+1. Open the files in Rstudio.
+1. Open the Knit option.
+1. Select "Knit with parameters...".
+1. In the pop-up, write the folder where the files are located.
+1. Click Knit.
+1. Wait until the html is displayed. It will take few minutes.
+
+### Ubuntu
+
+#### The pipelines can be runned in two ways, in the same way as Windows and with command line.
+
+#### Command line:
+
+``` shell
+
+Rscript input_CEL.R name/of/the/folder/
+
+```
+
+or
+
+
+``` shell
+
+Rscript input_IDAT.R name/of/the/folder/
+
+```
