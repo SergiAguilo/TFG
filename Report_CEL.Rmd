@@ -1,0 +1,116 @@
+---
+title: "Pipeline CEL Report"
+author: "Sergi Aguiló Castillo"
+date: "`r date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+params: 
+  Folder: myargs
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, results='hide'}
+
+###Import libraries
+library(ggplot2)
+library(affyPLM)
+library(affy)
+
+#### Read the files
+celfiles <- affy::ReadAffy(celfile.path = params$Folder)
+
+```
+
+# Pseudo-images
+
+```{r, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE,  comment=FALSE, message= FALSE, eval =T, out.width='.7\\linewidth', fig.asp=1, fig.ncol = 1}
+# ### Change the class of the files with a robut linear model
+# ### Necessary for creating the Pseudo-images
+ cel_PLM <- affyPLM::fitPLM(celfiles)
+
+
+# Make the image for each file
+for (i in celfiles$sample){
+  # Weighted image
+  image(cel_PLM, which=i, add.legend = T)
+  # Residuals
+  image(cel_PLM, which=i, type="resids", add.legend = T)
+}
+```
+
+# Processed data
+
+```{r, echo=FALSE, results='hide'}
+
+norm_cel <- rma(celfiles)
+norm_exp <- exprs(norm_cel)
+
+# Vectors to do the dataframe
+norm_sampleNames <- rep(colnames(norm_exp),each = nrow(norm_exp))
+norm_logs = vector()
+for (i in celfiles$sample){
+  norm_logs = c(norm_logs, norm_exp[,i])
+}
+# Create a data frame
+norm_logData = data.frame(logInt=norm_logs,sampleName=norm_sampleNames)
+```
+
+### Boxplot
+
+```{r, echo=FALSE, results='hide'}
+par(mar=c(20,8,4.1,2.1))# Boxplot
+ggplot(norm_logData, aes(sampleName, logInt)) + geom_boxplot() +
+  xlab("Sample number") + ylab("Normalised expression values") +
+  scale_y_log10() + 
+  theme(axis.text.x = element_text(colour = "aquamarine4",
+                                   angle = 50, size = 6.5, hjust = 1 ,
+                                   face = "bold"))
+```  
+
+### Density plot
+
+```{r, echo=FALSE, results='hide'}
+
+# Density plot
+ggplot(norm_logData, aes(logInt, color= sampleName)) +
+  geom_line(stat="density") + scale_x_log10() +
+  scale_color_discrete("Sample Name") + xlab("Normalised expression values")
+
+```
+
+# Comparison plots
+### MA plot
+
+```{r,echo=FALSE, fig.align='center'}
+
+for (i in celfiles$sample){
+  affy::MAplot(norm_cel, which = i)
+}
+```
+
+### Relative Log Expression (RLE)
+
+```{r, echo=FALSE, fig.width=10, fig.height=9}
+# RLE(cel_PLM, names = celfiles$sample)
+par(mar = c(16, 10, 4.1, 2.1))
+Mbox(norm_cel, main = "RLE", ylim = c(-0.4, 0.4),
+     outline = FALSE, col = "mistyrose",
+     las = 3, whisklty = 0, staplelty = 0, ylab = "RLE value")
+abline(h=0)
+```
+
+### Normalised Unscaled Standard Error
+
+```{r, echo=FALSE,fig.width=10, fig.height=9}
+par(mar = c(16, 10, 4.1, 2.1))
+
+boxplot(cel_PLM, main = "NUSE", outline = F,
+        ylim = c(0.95,1.15),col = "lightblue", las = 3,
+        whisklty = 0, staplelty = 0, ylab = "NUSE value")
+abline(h=1)
+```
