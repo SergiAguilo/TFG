@@ -1,0 +1,200 @@
+---
+title: "Pipeline IDAT Report"
+author: "Sergi Aguiló Castillo"
+date: "`r date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+params: 
+  Folder: myargs
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r echo=FALSE, message=FALSE, results='hide'}
+
+###Import libraries
+library(minfi)
+library(ggplot2)
+library(illuminaio)
+library(stringr)
+
+#### Read the files
+list_files <- list.files(path = params$Folder, pattern = "_Red.idat", full.names = T)
+list_files <- str_remove_all(list_files,"_Red.idat")
+
+q <- read.metharray(list_files)
+
+```
+
+
+# Processed data
+
+```{r, echo=FALSE, message=FALSE, results='hide'}
+
+noob <- preprocessNoob(q)
+
+
+exp_values <- data.frame(expr = c(getMeth(noob),getUnmeth(noob)),
+                         file_col = c(rep("R", nrow(noob)),rep("G", nrow(noob))),
+                         sample_n = rep(c(1:ncol(noob)), each = nrow(noob)*2))
+
+```
+
+### Boxplot
+
+```{r, echo=FALSE, results='hide'}
+
+# Boxplot
+ggplot(exp_values, aes(factor(sample_n), expr,fill = file_col)) + geom_boxplot()+
+  scale_y_log10() + scale_fill_manual("Type of file", values=c("lightgreen", "red")) + 
+  xlab("Sample number") + ylab("Normalised expression values")
+```
+
+### Density plot
+
+```{r, echo=FALSE, results='hide'}
+
+# Density plot
+ggplot(exp_values, aes(exp_values$expr, colour = factor(exp_values$sample_n))) +
+  geom_line(stat="density") +
+  scale_x_log10() + scale_color_discrete("Sample Name") + 
+  xlab("Normalised expression values")
+
+```
+
+# Comparison plots
+
+### MA plot
+
+```{r,echo=FALSE, fig.align='center'}
+
+M = log2(getMeth(noob)) - log2(getUnmeth(noob))
+A = (1/2)*(log2(getMeth(noob)) + log2(getUnmeth(noob)))
+
+MA_norm = data.frame(A, M)
+
+for (x in 1:ncol(M)){
+  i = as.numeric(x)
+  p <- ggplot(data=MA_norm, aes(x= MA_norm[,i], y = MA_norm[,i + ncol(noob)])) +
+    geom_point(alpha = 1,shape = 18, size = 0.1) + xlab("A") + ylab("M")
+   print(p)
+  }
+```
+
+
+### Relative Log Expression (RLE)
+
+```{r, echo=FALSE}
+
+# For Red files
+row_medians_R <- rowMedians(as.matrix(getMeth(noob)))
+
+RLE_data_R <- sweep(getMeth(noob), 1, row_medians_R)
+
+
+# For Green files
+row_medians_G <- rowMedians(as.matrix(getUnmeth(noob)))
+
+RLE_data_G <- sweep(getUnmeth(noob), 1, row_medians_G)
+
+
+RLE_data <- rbind(data.frame(RLE_data_R, file = "R"),
+                   data.frame(RLE_data_G, file = "G"))
+
+
+RLE_data_gathered <- 
+  tidyr::gather(RLE_data, key= "samples", value = "Expr", -file)
+
+
+ggplot2::ggplot(RLE_data_gathered, aes(samples, Expr, fill = factor(file))) + 
+  geom_boxplot(outlier.shape = NA) +
+  scale_fill_manual("Type of file", values=c("red", "lightgreen")) +
+  ylim(c(-2, 2)) + xlab("Sample number") + ylab("RLE value") +
+  geom_hline(yintercept = 0, linetype="dashed") + 
+  theme(axis.text.x = element_text(colour = "aquamarine4",
+                                   angle = 60, size = 6.5, hjust = 1,
+                                   face = "bold"))
+
+```
+
+### Normalised Unscaled Standard Error (NUSE)
+
+```{r, echo=FALSE}
+
+retrieve_stderr <- function(values, name){
+  
+  if (ncol(values) == 3){
+        stderr_val <- data.frame(values[,2] / sqrt(values[,3]))
+  }
+  else {
+        stderr_val <- data.frame(values[,3] / sqrt(values[,9]))
+  }
+  colnames(stderr_val) = str_remove_all(name,"_Red.idat|_Grn.idat")
+
+  return(stderr_val)
+}
+
+std_err <- function(list_f){
+  # Initialize the data.frame
+  idat_f <- readIDAT(list_f[1])
+  stderr_val <- retrieve_stderr(idat_f$Quants, list_f[1])
+  stderr_idat <- stderr_val
+
+  for (i in (2:length(list_f))){
+    idat_f <- readIDAT(list_f[i])
+    stderr_val <- retrieve_stderr(idat_f$Quants, list_f[i])
+    stderr_idat <- cbind(stderr_idat, stderr_val)
+  }
+  return(stderr_idat)
+}
+
+
+# Red files
+
+list_r <- list.files(path = params$Folder, pattern = "Red.idat", full.names = T)
+r_nuse <- std_err(list_r)
+
+
+row_medians_stderr_R <- rowMedians(as.matrix(r_nuse))
+NUSE_R <- r_nuse / row_medians_stderr_R
+
+# Green files
+
+list_g <- list.files(path = params$Folder, pattern = "Grn.idat", full.names = T)
+g_nuse <- std_err(list_g)
+
+row_medians_stderr_G <- rowMedians(as.matrix(g_nuse))
+NUSE_G <- g_nuse / row_medians_stderr_G
+
+
+NUSE_data <- rbind(data.frame(NUSE_R, file = "R"),
+                    data.frame(NUSE_G, file = "G"))
+
+
+NUSE_data_gathered <- 
+  tidyr::gather(NUSE_data, key= "samples", value = "NUSE", -file)
+
+
+ggplot2::ggplot(NUSE_data_gathered, aes(samples, NUSE, fill = factor(file))) + 
+  geom_boxplot(outlier.shape = NA) + ylim(0, 2) + 
+  scale_fill_manual("Type of file", values=c("red", "lightgreen")) +
+  xlab("Sample number") + ylab("NUSE value") +
+  geom_hline(yintercept = 1, linetype="dashed") +
+  theme(axis.text.x = element_text(colour = "aquamarine4",
+                                   angle = 50, size = 6.5, hjust = 1 ,
+                                   face = "bold"))
+```
+
+### Beta value
+
+```{r, echo=FALSE}
+
+densityBeanPlot(noob)
+
+
+```
