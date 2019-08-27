@@ -13,7 +13,7 @@
 1. Click Knit.
 1. Wait until the html is displayed. It will take few minutes.
 
-### Ubuntu
+### Linux
 
 #### The pipelines can be runned in two ways, in the same way as Windows and with command line.
 
