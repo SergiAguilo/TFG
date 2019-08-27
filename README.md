@@ -1,6 +1,7 @@
 # Pipelines for DNA microarray QC
 
 #### Pipeline_CEL.Rmd and Pipeline_IDAT.Rmd are created to make the quality control of raw Affymetrix and Illumina microarray files.
+Due to the few information that an specific file can give to us, the pipelines are focused in the comparison of the files of the same dataset. Specially in IDATs, because you have two files for each sample.
 
 ## Running the pipelines
 
